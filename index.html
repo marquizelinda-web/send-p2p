@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Large Files Free – No Signup, No Limit</title>
+  <meta name="description" content="Send and receive huge files directly between browsers. Free, anonymous, no size limits, no account needed.">
+  <meta property="og:title" content="Send Large Files Free – No Signup, No Limit">
+  <meta property="og:description" content="Direct P2P file transfer in your browser. Free, anonymous, unlimited size.">
+  <meta property="og:image" content="icon-512.png">
+  <meta property="og:type" content="website">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+  <style>
+    body { font-family: system-ui; background: #0f172a; color: white; text-align: center; padding: 2rem 1rem; }
+    button { background: #3b82f6; border: none; color: white; padding: 1rem 2rem; font-size: 1.2rem; border-radius: 0.5rem; margin: 1rem; }
+    input { padding: 0.5rem; width: 80%; max-width: 400px; border-radius: 0.3rem; border: none; }
+    .hidden { display: none; }
+    #shareBtn { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <h1>⚡ Send & Receive</h1>
+  <div id="sendMode">
+    <p>📤</p>
+    <input type="file" id="fileInput" style="display:none">
+    <button onclick="document.getElementById('fileInput').click()">📁 Select File</button>
+    <div id="linkArea" class="hidden">
+      <p>🔗 Link ready:</p>
+      <input type="text" id="shareLink" readonly>
+      <button id="shareBtn">📲 Share</button>
+    </div>
+  </div>
+  <hr style="margin:2rem 0; border-color:#334155">
+  <div id="receiveMode">
+    <p>📥</p>
+    <input type="text" id="receiveInput" placeholder="Paste link or magnet here">
+    <button id="receiveBtn">⬇️ Receive</button>
+    <div id="receiveProgress" class="hidden">
+      <p>⏳ Downloading... <span id="progress">0</span>%</p>
+    </div>
+    <div id="receiveDone" class="hidden">
+      <p>✅ Done!</p>
+      <button onclick="location.href=location.href">📤 Send files too</button>
+    </div>
+  </div>
+  <div style="margin-top:2rem;">
+    <!-- INSIRA AQUI O SEU CÓDIGO DE ANÚNCIO DO COINZILLA -->
+    <p style="opacity:0.5; font-size:0.8rem;">Ad</p>
+  </div>
+  <p style="font-size:0.8rem;">⚡ Support: bc1q... (seu endereço Bitcoin)</p>
+
+  <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
+  <script>
+    const client = new WebTorrent();
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      client.seed(file, torrent => {
+        document.getElementById('shareLink').value = torrent.magnetURI;
+        document.getElementById('linkArea').classList.remove('hidden');
+      });
+    });
+    document.getElementById('shareBtn').addEventListener('click', () => {
+      const link = document.getElementById('shareLink').value;
+      if (navigator.share) {
+        navigator.share({ title: 'Download file', text: 'Get this file via P2P', url: link });
+      } else {
+        navigator.clipboard.writeText(link);
+        alert('Link copied!');
+      }
+    });
+    document.getElementById('receiveBtn').addEventListener('click', () => {
+      const magnet = document.getElementById('receiveInput').value.trim();
+      if (!magnet) return;
+      document.getElementById('receiveProgress').classList.remove('hidden');
+      client.add(magnet, torrent => {
+        torrent.on('download', bytes => {
+          const progress = (torrent.progress * 100).toFixed(1);
+          document.getElementById('progress').textContent = progress;
+        });
+        torrent.on('done', () => {
+          document.getElementById('receiveProgress').classList.add('hidden');
+          document.getElementById('receiveDone').classList.remove('hidden');
+          torrent.files.forEach(file => {
+            file.getBlobURL((err, url) => {
+              if (err) return;
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = file.name;
+              a.click();
+            });
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
